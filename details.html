@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Détail Bassin</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+</head>
+<body style="background:#17407b;">
+  <header class="main-header">
+    <div class="header-left">
+      <img src="sartex_logo.png" alt="Logo Sartex" class="logo">
+      <span class="brand">Sartex<br>Group</span>
+    </div>
+    <nav class="header-nav">
+      <a href="index.html" class="nav-link active">
+        <i class="fas fa-house nav-icon"></i>
+        Accueil
+      </a>
+      <a href="#" class="nav-link" id="logout-link" onclick="if(confirm('Êtes-vous sûr de vouloir vous déconnecter ?')){localStorage.removeItem('session_user');window.location.href='login.html';} return false;">
+        <i class="fas fa-sign-out-alt nav-icon"></i>
+        Déconnexion
+      </a>
+    </nav>
+  </header>
+  <div id="ip-header-details" style="display:flex;justify-content:flex-end;align-items:center;padding:0 48px 12px 48px;margin-top:0;">
+    <!-- L'adresse IP du bassin sera injectée ici par JS -->
+  </div>
+  <div style="height:70px;"></div>
+  <div style="display: flex; align-items: center; justify-content: space-between; background: #17407b; padding: 24px 48px 18px 48px; border-radius: 0 0 32px 32px; margin-top: 0;">
+    <button onclick="window.history.back()" style="background:#fff;border:none;border-radius:12px;padding:6px 12px;font-size:0.95em;cursor:pointer;box-shadow:0 2px 8px #17407b22;display:flex;align-items:center;gap:8px;"><i class="fas fa-arrow-left"></i> Retour</button>
+    <div class="header-left" style="display:flex;align-items:center;gap:8px;margin-right:800px;">
+      <span id="bassinIcon" style="font-size:2em;vertical-align:middle;"></span>
+      <span id="bassinTitle" style="font-size:2.2em;font-weight:bold;color:#fff;vertical-align:middle;text-align:left;">Bassin</span>
+    </div>
+    <span id="bassinStatus" style="margin-left:24px;"></span>
+  </div>
+  <div style="display:flex;gap:32px;justify-content:center;align-items:flex-start;padding:0 32px;">
+    <div style="background:#fff;border-radius:32px;padding:32px 40px;min-width:520px;max-width:700px;box-shadow:0 8px 32px #17407b18;flex:2;">
+      <h2 style="color:#17407b;font-size:1.5em;margin-bottom:24px;">Monitoring Principal</h2>
+      <div style="display:flex;gap:32px;align-items:center;">
+        <div style="display:flex;flex-direction:column;align-items:center;">
+          <div id="waterGauge"></div>
+          <div style="margin-top:18;"></div>
+        </div>
+        <div style="flex:1;display:flex;flex-direction:column;gap:18px;">
+          <div style="font-size:1.2em;font-weight:bold;color:#17407b;margin-bottom:8px;">État des Pompes</div>
+          <div id="pumpsState" style="display:flex;gap:18px;"></div>
+        </div>
+      </div>
+    </div>
+    <div style="background:#fff;border-radius:32px;padding:32px 40px;min-width:340px;max-width:420px;box-shadow:0 8px 32px #17407b18;flex:1;">
+      <h2 style="color:#17407b;font-size:1.3em;margin-bottom:18px;">Alarmes & Alertes</h2>
+      <div style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
+        <div id="alarmStatus" style="margin-bottom:12px;"></div>
+        <div id="lastCheck" style="color:#333;font-size:1em;margin-bottom:12px;"></div>
+        <button id="historiqueAlarmeBtn" style="background:#17407b;color:#fff;padding:10px 24px;border:none;border-radius:12px;font-size:1em;font-weight:bold;cursor:pointer;box-shadow:0 2px 8px #17407b22;">Historique des alarmes</button>
+        <div id="lastAlarms" style="margin-top:12px;"></div>
+      </div>
+    </div>
+  </div>
+  <script src="details.js"></script>
+</body>
+</html> 
