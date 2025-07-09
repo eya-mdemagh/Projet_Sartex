@@ -223,3 +223,51 @@ function renderBassinCard(bassin) {
     </div>
   `;
 }
+
+// Update Vue d'Ensemble du Système with real data
+fetch('data.json')
+  .then(response => response.json())
+  .then(data => {
+    let totalBassins = 0;
+    let bassinsOnline = 0;
+    let totalPumps = 0;
+    let activePumps = 0;
+    let activeAlarms = 0;
+    const alarmKeys = ['Alarm_Low_Level', 'Alarm_High_Level', 'Alarm_Thermal_P1', 'Alarm_Thermal_P2'];
+    for (const key in data) {
+      const bassin = data[key];
+      if (bassin && typeof bassin === 'object') {
+        totalBassins++;
+        if (bassin.System_ON === true) bassinsOnline++;
+        // Pumps
+        if ('Pump1' in bassin) {
+          totalPumps++;
+          if (bassin.Pump1 === true) activePumps++;
+        }
+        if ('Pump2' in bassin) {
+          totalPumps++;
+          if (bassin.Pump2 === true) activePumps++;
+        }
+        // Alarms
+        if (alarmKeys.some(alarm => bassin[alarm] === true)) {
+          activeAlarms++;
+        }
+      }
+    }
+    // Update DOM
+    const bassinsEl = document.getElementById('overview-bassins');
+    if (bassinsEl) bassinsEl.textContent = `${bassinsOnline}/${totalBassins}`;
+    const pumpsEl = document.getElementById('overview-pumps');
+    if (pumpsEl) pumpsEl.textContent = `${activePumps}/${totalPumps}`;
+    const alarmsEl = document.getElementById('overview-alarms');
+    if (alarmsEl) alarmsEl.textContent = activeAlarms;
+  })
+  .catch(() => {
+    // fallback in case of error
+    const bassinsEl = document.getElementById('overview-bassins');
+    if (bassinsEl) bassinsEl.textContent = '--';
+    const pumpsEl = document.getElementById('overview-pumps');
+    if (pumpsEl) pumpsEl.textContent = '--';
+    const alarmsEl = document.getElementById('overview-alarms');
+    if (alarmsEl) alarmsEl.textContent = '--';
+  });

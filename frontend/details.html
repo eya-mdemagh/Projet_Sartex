@@ -11,7 +11,7 @@
 <body style="background:#17407b;">
   <header class="main-header">
     <div class="header-left">
-      <img src="assets/sartex_logo.png" alt="Logo Sartex" class="logo">
+      <img src="sartex_logo.png" alt="Logo Sartex" class="logo">
       <span class="brand">Sartex<br>Group</span>
     </div>
     <nav class="header-nav">
@@ -67,12 +67,37 @@
         <button id="historiqueAlarmeBtn"
           style="background:#17407b;color:#fff;padding:10px 24px;border:none;border-radius:12px;font-size:1em;font-weight:bold;cursor:pointer;box-shadow:0 2px 8px #17407b22;">Historique
           des alarmes</button>
-        <div id="lastAlarms" style="margin-top:12px;"></div>
       </div>
     </div>
+    <!-- End of Monitoring Principal and Alarmes & Alertes row -->
   </div>
-  <!-- Bassin details and alarm history will be dynamically inserted here -->
-  <div id="bassin-details"></div>
+  <!-- Paramètres Système section in a new row -->
+  <div id="system-params-section">
+    <div style="font-size:1.3em;font-weight:bold;color:#17407b;margin-bottom:18px;">Paramètres Système</div>
+    <div id="systemParams"></div>
+  </div>
+  <!-- Modal for Alarm History -->
+  <div id="alarmHistoryModal"
+    style="display:none;position:fixed;z-index:1000;left:0;top:0;width:100vw;height:100vh;background:rgba(23,64,123,0.18);align-items:center;justify-content:center;">
+    <div
+      style="background:#fff;border-radius:24px;box-shadow:0 8px 32px #17407b33;padding:32px 40px;min-width:420px;max-width:90vw;max-height:80vh;overflow:auto;position:relative;">
+      <button id="closeAlarmModal"
+        style="position:absolute;top:18px;right:18px;background:none;border:none;font-size:1.6em;color:#17407b;cursor:pointer;"><i
+          class="fas fa-times"></i></button>
+      <h2 style="color:#17407b;font-size:1.3em;margin-bottom:18px;">Historique des alarmes</h2>
+      <div style="margin-bottom:16px;">
+        <label for="alarmTypeFilter" style="font-weight:bold;color:#17407b;margin-right:8px;">Filtrer par type :</label>
+        <select id="alarmTypeFilter" style="padding:6px 12px;border-radius:8px;border:1px solid #ccc;">
+          <option value="all">Toutes les alarmes</option>
+          <option value="Alarm_Low_Level">Niveau bas</option>
+          <option value="Alarm_High_Level">Niveau haut</option>
+          <option value="Alarm_Thermal_P1">Thermique P1</option>
+          <option value="Alarm_Thermal_P2">Thermique P2</option>
+        </select>
+      </div>
+      <div id="modalAlarmHistory"></div>
+    </div>
+  </div>
   <script src="details.js"></script>
 </body>
 

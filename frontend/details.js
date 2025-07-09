@@ -154,11 +154,13 @@ async function chargerBassin() {
   document.getElementById('lastCheck').textContent = 'Dernière vérification: ' + (new Date()).toLocaleTimeString();
 }
 
+let allAlarms = [];
+
 document.addEventListener('DOMContentLoaded', function () {
   const urlParams = new URLSearchParams(window.location.search);
   const bassinName = urlParams.get('bassin');
   if (!bassinName) {
-    document.getElementById('bassin-details').innerHTML = '<div class="error">Aucun bassin sélectionné.</div>';
+    document.getElementById('bassinTitle').textContent = 'Bassin inconnu';
     return;
   }
   // Fetch bassin status
@@ -171,48 +173,131 @@ document.addEventListener('DOMContentLoaded', function () {
           renderBassinDetails(bassin);
           fetchAlarmHistory(bassinName);
         } else {
-          document.getElementById('bassin-details').innerHTML = '<div class="error">Bassin non trouvé.</div>';
+          document.getElementById('bassinTitle').textContent = 'Bassin non trouvé';
         }
       } else {
-        document.getElementById('bassin-details').innerHTML = '<div class="error">Erreur de chargement du bassin</div>';
+        document.getElementById('bassinTitle').textContent = 'Erreur de chargement du bassin';
       }
     })
     .catch(() => {
-      document.getElementById('bassin-details').innerHTML = '<div class="error">Erreur de connexion au serveur</div>';
+      document.getElementById('bassinTitle').textContent = 'Erreur de connexion au serveur';
     });
+
+  // Modal logic
+  const modal = document.getElementById('alarmHistoryModal');
+  const btn = document.getElementById('historiqueAlarmeBtn');
+  const closeBtn = document.getElementById('closeAlarmModal');
+  btn.onclick = function () {
+    renderModalAlarmHistory();
+    modal.style.display = 'flex';
+  };
+  closeBtn.onclick = function () {
+    modal.style.display = 'none';
+  };
+  window.onclick = function (event) {
+    if (event.target === modal) {
+      modal.style.display = 'none';
+    }
+  };
 });
 
 function renderBassinDetails(bassin) {
   const status = bassin.status || {};
-  // Define which fields to show and their labels
-  const fieldLabels = {
-    Water_Level: "Niveau d'eau (%)",
-    Pump1: "Pompe 1",
-    Pump2: "Pompe 2",
-    System_ON: "Système ON",
-    Alarm_High_Level: "Alarme Haut Niveau",
-    Alarm_Low_Level: "Alarme Bas Niveau",
-    Alarm_Thermal_P1: "Alarme Thermique P1",
-    Alarm_Thermal_P2: "Alarme Thermique P2"
-    // Add more as needed
+  // Set title and icon
+  const config = {
+    'Bassin_Osmose': {
+      display: 'Bassin Eau Osmosé', icon: `<svg width="38" height="38" viewBox="0 0 38 38" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M19 5C19 5 8 18.5 8 25.5C8 31.0228 13.4772 33 19 33C24.5228 33 30 31.0228 30 25.5C30 18.5 19 5 19 5Z" fill="#fff" /><path d="M19 28.5C16.2386 28.5 14 26.2614 14 23.5" stroke="#204080" stroke-width="2" stroke-linecap="round" /></svg>`
+    },
+    'Bassin_Teinture': {
+      display: 'Bassin Teinture', icon: '<i class="fas fa-flask-vial" style="color:#a31963;font-size:38px;"></i>'
+    },
+    'Bassin_Chardiniaire': {
+      display: 'Bassin Chaudière', icon: '<i class="fas fa-industry" style="color:#ff9800;font-size:38px;"></i>'
+    },
+    'Bassin_Lavage': {
+      display: 'Bassin Lavage', icon: '<i class="fas fa-soap" style="color:#00bcd4;font-size:38px;"></i>'
+    }
   };
+  const c = config[bassin.name] || { display: bassin.name, icon: '' };
+  document.getElementById('bassinTitle').textContent = c.display;
+  document.getElementById('bassinIcon').innerHTML = c.icon;
 
-  let html = `<h2>Détails pour ${bassin.name}</h2>`;
-  html += '<ul>';
-  let hasData = false;
-  for (const [key, label] of Object.entries(fieldLabels)) {
-    if (status[key] !== null && status[key] !== undefined) {
-      html += `<li><b>${label}:</b> ${status[key]}</li>`;
-      hasData = true;
+  // Water Gauge (circular SVG with m³ and %)
+  const waterLevel = status.Water_Level !== undefined ? status.Water_Level : 0;
+  const waterPercent = Math.max(0, Math.min(100, waterLevel));
+  // Assume 1% = 0.01 m³ for demo (adjust as needed)
+  const waterM3 = (waterPercent * 0.01).toFixed(2);
+  document.getElementById('waterGauge').innerHTML = `
+    <svg width="100" height="100" viewBox="0 0 100 100">
+      <circle cx="50" cy="50" r="44" fill="none" stroke="#eee" stroke-width="8"/>
+      <circle cx="50" cy="50" r="44" fill="none" stroke="#1976d2" stroke-width="8"
+        stroke-dasharray="276.46" stroke-dashoffset="${276.46 * (1 - waterPercent / 100)}"
+        style="transition: stroke-dashoffset 0.6s;"/>
+      <text x="50" y="48" text-anchor="middle" font-size="1.3em" fill="#17407b" font-weight="bold">${waterM3} m³</text>
+      <text x="50" y="65" text-anchor="middle" font-size="1em" fill="#888">${waterPercent}%</text>
+    </svg>
+  `;
+
+  // Pumps State (as cards)
+  let pumpsHtml = '<div class="pump-list">';
+  [1, 2].forEach(num => {
+    const isOn = status[`Pump${num}`] ? true : false;
+    pumpsHtml += `
+      <div class="pump">
+        <div class="pump-icon" style="color:#43a047;"><i class="fas fa-fan"></i></div>
+        <div style="font-weight:bold;color:#17407b;">Pompe ${num}</div>
+        <div class="pump-status ${isOn ? 'on' : 'off'}">${isOn ? 'ON' : 'OFF'}</div>
+        <div style="color:#888;font-size:0.98em;margin-top:6px;">Temps: 0h 00m</div>
+      </div>
+    `;
+  });
+  pumpsHtml += '</div>';
+  document.getElementById('pumpsState').innerHTML = pumpsHtml;
+
+  // Alarmes & Alertes (current status)
+  let alarmHtml = '';
+  const alarmFields = [
+    { key: 'Alarm_High_Level', label: 'Alarme niveau haut' },
+    { key: 'Alarm_Low_Level', label: 'Alarme niveau bas' },
+    { key: 'Alarm_Thermal_P1', label: 'Alarme thermique P1' },
+    { key: 'Alarm_Thermal_P2', label: 'Alarme thermique P2' }
+  ];
+  if (status.System_ON === false) {
+    alarmHtml = '<div class="alarm-badge off" style="background:#eee;color:#888;">Système hors service.</div>';
+  } else {
+    const activeAlarms = alarmFields.filter(alarm => status[alarm.key]);
+    if (activeAlarms.length === 0) {
+      alarmHtml = '<div class="alarm-badge ok">Aucune alarme active.</div>';
+    } else {
+      activeAlarms.forEach(alarm => {
+        alarmHtml += `<div class="alarm-badge alert">${alarm.label} : ALERTE</div>`;
+      });
     }
   }
-  if (!hasData) {
-    html += '<li>Aucune donnée disponible.</li>';
+  document.getElementById('alarmStatus').innerHTML = alarmHtml;
+
+  // Paramètres Système (Débit & Pression)
+  const systemParamsDiv = document.getElementById('systemParams');
+  if (systemParamsDiv && bassin) {
+    const debit = typeof bassin.Debit === 'number' ? bassin.Debit : 0;
+    const pression = typeof bassin.Pression === 'number' ? bassin.Pression : 0;
+    systemParamsDiv.innerHTML = `
+      <div class="param-card">
+        <div class="param-icon"><svg width="32" height="32" viewBox="0 0 32 32"><g><rect fill="none" height="32" width="32"/></g><g><path d="M7 13c1.5 0 1.5 2 3 2s1.5-2 3-2 1.5 2 3 2 1.5-2 3-2 1.5 2 3 2" stroke="#17407b" stroke-width="2" fill="none"/></g></svg></div>
+        <div class="param-label">Débit</div>
+        <div class="param-value"><b>${debit.toFixed(1)} L/min</b></div>
+      </div>
+      <div class="param-card">
+        <div class="param-icon"><svg width="32" height="32" viewBox="0 0 32 32"><g><rect fill="none" height="32" width="32"/></g><g><circle cx="16" cy="16" r="10" stroke="#17407b" stroke-width="2" fill="none"/><path d="M16 16 L16 10" stroke="#17407b" stroke-width="2" stroke-linecap="round"/><circle cx="16" cy="16" r="2" fill="#17407b"/></g></svg></div>
+        <div class="param-label">Pression</div>
+        <div class="param-value"><b>${pression.toFixed(1)} bar</b></div>
+      </div>
+    `;
   }
-  html += '</ul>';
-  html += '<h3>Historique des alarmes</h3>';
-  html += '<div id="alarm-history"></div>';
-  document.getElementById('bassin-details').innerHTML = html;
+  // Last check time
+  if (document.getElementById('lastCheck')) {
+    document.getElementById('lastCheck').textContent = 'Dernière vérification: ' + (new Date()).toLocaleTimeString();
+  }
 }
 
 function fetchAlarmHistory(bassinName) {
@@ -220,27 +305,85 @@ function fetchAlarmHistory(bassinName) {
     .then(response => response.json())
     .then(data => {
       if (data.success) {
-        renderAlarmHistory(data.alarms);
+        allAlarms = data.alarms;
+        renderAlarmSummary(data.alarms);
       } else {
-        document.getElementById('alarm-history').innerHTML = '<div class="error">Erreur de chargement des alarmes</div>';
+        document.getElementById('lastAlarms').innerHTML = '<div class="error">Erreur de chargement des alarmes</div>';
       }
     })
     .catch(() => {
-      document.getElementById('alarm-history').innerHTML = '<div class="error">Erreur de connexion au serveur</div>';
+      document.getElementById('lastAlarms').innerHTML = '<div class="error">Erreur de connexion au serveur</div>';
     });
 }
 
-function renderAlarmHistory(alarms) {
+function renderAlarmSummary(alarms) {
   if (!alarms.length) {
-    document.getElementById('alarm-history').innerHTML = '<div>Aucune alarme enregistrée.</div>';
+    document.getElementById('lastAlarms').innerHTML = '<div>Aucune alarme enregistrée.</div>';
     return;
   }
-  let html = '<table class="alarm-table"><thead><tr><th>Type</th><th>Date/Heure</th></tr></thead><tbody>';
-  alarms.forEach(alarm => {
-    html += `<tr><td>${alarm.alarm_type}</td><td>${alarm.timestamp}</td></tr>`;
+  // Map alarm types to French
+  const alarmTypeMap = {
+    'Alarm_Low_Level': 'Alarme niveau bas',
+    'Alarm_High_Level': 'Alarme niveau haut',
+    'Alarm_Thermal_P1': 'Alarme thermique P1',
+    'Alarm_Thermal_P2': 'Alarme thermique P2'
+  };
+  // Show only the last 3 alarms
+  let html = '<table class="alarm-table-modal"><thead><tr><th>Date</th><th>Heure</th><th>Type d\'Alarme</th></tr></thead><tbody>';
+  alarms.slice(0, 3).forEach(alarm => {
+    const label = alarmTypeMap[alarm.alarm_type] || alarm.alarm_type;
+    let date = '', heure = '';
+    if (alarm.timestamp) {
+      const parts = alarm.timestamp.split(' ');
+      date = parts[0] || '';
+      heure = parts[1] || '';
+    }
+    html += `<tr>\n      <td>${date}</td>\n      <td>${heure}</td>\n      <td><span class="alarm-badge alert">${label}</span></td>\n    </tr>`;
   });
   html += '</tbody></table>';
-  document.getElementById('alarm-history').innerHTML = html;
+  if (alarms.length > 3) {
+    html += `<div style="font-size:0.95em;color:#888;margin-top:4px;">...et ${alarms.length - 3} autres</div>`;
+  }
+  document.getElementById('lastAlarms').innerHTML = html;
+}
+
+function renderModalAlarmHistory() {
+  const container = document.getElementById('modalAlarmHistory');
+  const filter = document.getElementById('alarmTypeFilter') ? document.getElementById('alarmTypeFilter').value : 'all';
+  let filteredAlarms = allAlarms;
+  if (filter !== 'all') {
+    filteredAlarms = allAlarms.filter(alarm => alarm.alarm_type === filter);
+  }
+  if (!filteredAlarms.length) {
+    container.innerHTML = '<div>Aucune alarme enregistrée pour ce type.</div>';
+    return;
+  }
+  // Map alarm types to French
+  const alarmTypeMap = {
+    'Alarm_Low_Level': 'Alarme niveau bas',
+    'Alarm_High_Level': 'Alarme niveau haut',
+    'Alarm_Thermal_P1': 'Alarme thermique P1',
+    'Alarm_Thermal_P2': 'Alarme thermique P2'
+  };
+  let html = '<table class="alarm-table-modal"><thead><tr><th>Date</th><th>Heure</th><th>Type d\'Alarme</th></tr></thead><tbody>';
+  filteredAlarms.forEach(alarm => {
+    const label = alarmTypeMap[alarm.alarm_type] || alarm.alarm_type;
+    let date = '', heure = '';
+    if (alarm.timestamp) {
+      const parts = alarm.timestamp.split(' ');
+      date = parts[0] || '';
+      heure = parts[1] || '';
+    }
+    html += `<tr>\n      <td>${date}</td>\n      <td>${heure}</td>\n      <td><span class="alarm-badge alert">${label}</span></td>\n    </tr>`;
+  });
+  html += '</tbody></table>';
+  container.innerHTML = html;
+  // Add event listener if not already present
+  const filterDropdown = document.getElementById('alarmTypeFilter');
+  if (filterDropdown && !filterDropdown.hasListener) {
+    filterDropdown.addEventListener('change', renderModalAlarmHistory);
+    filterDropdown.hasListener = true;
+  }
 }
 
 window.onload = chargerBassin; 

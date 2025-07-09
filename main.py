@@ -241,12 +241,6 @@ try:
                                 raise ValueError("Erreur de lecture (coil)")
                             automate_data[var_name] = result.bits[0]
 
-                        elif var_type == "discrete_input":
-                            result = client.read_discrete_inputs(addr, 1)
-                            if result.isError():
-                                raise ValueError("Erreur de lecture (discrete_input)")
-                            automate_data[var_name] = result.bits[0]
-
                         elif var_type == "holding_register":
                             if info.get("data_type") == "float32":
                                 result = client.read_holding_registers(addr, 2)
