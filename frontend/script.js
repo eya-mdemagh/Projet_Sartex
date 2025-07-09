@@ -169,7 +169,6 @@ function renderBassinList(bassins) {
 }
 
 function renderBassinCard(bassin) {
-  // Map bassin name to display name and color/icon
   const config = {
     'Bassin_Osmose': {
       display: 'Bassin Eau Osmosé', color: '#204080', icon: `<svg width="38" height="38" viewBox="0 0 38 38" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M19 5C19 5 8 18.5 8 25.5C8 31.0228 13.4772 33 19 33C24.5228 33 30 31.0228 30 25.5C30 18.5 19 5 19 5Z" fill="#fff" /><path d="M19 28.5C16.2386 28.5 14 26.2614 14 23.5" stroke="#204080" stroke-width="2" stroke-linecap="round" /></svg>`
@@ -185,13 +184,18 @@ function renderBassinCard(bassin) {
     }
   };
   const c = config[bassin.name] || { display: bassin.name, color: '#888', icon: '' };
-  // Example: extract water level, alarms, etc. from status
   const status = bassin.status || {};
-  const waterLevel = status.Water_Level !== undefined ? status.Water_Level + ' %' : 'N/A';
+  let activePumps = 0;
+  if (status.Pump1 === true) activePumps++;
+  if (status.Pump2 === true) activePumps++;
+  let percent = null;
+  let dashoffset = 251.2;
+  if (typeof status.Water_Level_Sim === 'number' && typeof status.water_level_max === 'number' && status.water_level_max > 0) {
+    percent = Math.round(100 * status.Water_Level_Sim / status.water_level_max);
+    dashoffset = 251.2 * (1 - (status.Water_Level_Sim / status.water_level_max));
+  }
   const alarmCount = Object.keys(status).filter(k => k.startsWith('Alarm_') && status[k]).length;
-  // Example: automate id (if available)
-  const automate = status.Automate_ID || 'N/A';
-  // Card HTML
+  const automate = status.Automate_ID || 'DVP28SV-01';
   return `
     <div class="card">
       <div class="card-title">
@@ -201,19 +205,31 @@ function renderBassinCard(bassin) {
         ${c.display}
       </div>
       <div class="card-content">
+        <div class="bassin-infos-table" style="margin-bottom:12px;">
+          <div class="bassin-info-row" style="margin-bottom:6px;">
+            <span class="bassin-info-label">Pompes actives:</span>
+            <span class="bassin-info-value" style="color:#204080;font-weight:bold;margin-left:4px;">${activePumps}/2</span>
+          </div>
+          <div class="bassin-info-separator" style="border-bottom:1px solid #e0e4ea;margin:6px 0;"></div>
+          <div class="bassin-info-row" style="margin-bottom:6px;">
+            <span class="bassin-info-label">Alarmes:</span>
+            <span class="bassin-info-value" style="color:#43a047;font-weight:bold;margin-left:4px;">${alarmCount}</span>
+          </div>
+          <div class="bassin-info-separator" style="border-bottom:1px solid #e0e4ea;margin:6px 0;"></div>
+          <div class="bassin-info-row">
+            <span class="bassin-info-label">Automate:</span>
+            <span class="bassin-info-value" style="margin-left:4px;"><a href="#" style="color:#1976d2;font-weight:bold;text-decoration:none;">${automate}</a></span>
+          </div>
+        </div>
         <div class="circle-container">
-          <svg viewBox="0 0 120 120" class="circle-svg">
+          <svg viewBox="0 0 120 120" class="circle-svg" style="display:block;">
             <circle cx="60" cy="60" r="53" fill="none" stroke="#888" stroke-width="2" opacity="0.18" />
             <circle cx="60" cy="60" r="46" fill="none" stroke="#888" stroke-width="2" opacity="0.28" />
             <circle cx="60" cy="60" r="40" fill="#fff" />
-            <circle cx="60" cy="60" r="40" fill="none" stroke="${c.color}" stroke-width="10" stroke-dasharray="251.2" stroke-dashoffset="0" />
+            <circle cx="60" cy="60" r="40" fill="none" stroke="${c.color}" stroke-width="10" stroke-dasharray="251.2" stroke-dashoffset="${dashoffset}" style="transition:stroke-dashoffset 0.6s;" transform="rotate(-90 60 60)" />
+            <text x="50%" y="50%" text-anchor="middle" dominant-baseline="central" font-size="2.2em" font-weight="bold" fill="#204080">${percent !== null ? percent : 'N/A'}</text>
+            <text x="50%" y="68%" text-anchor="middle" dominant-baseline="middle" font-size="1.3em" fill="#204080">%</text>
           </svg>
-          <div class="water-value">${waterLevel}</div>
-        </div>
-        <div class="bassin-infos-table">
-          <div class="bassin-info-row"><span class="bassin-info-label">Alarmes:</span> <span class="bassin-info-value" style="color:${c.color};font-weight:bold;">${alarmCount}</span></div>
-          <div class="bassin-info-separator"></div>
-          <div class="bassin-info-row"><span class="bassin-info-label">Automate:</span> <span class="bassin-info-value"><a href="#" style="color:#1976d2;font-weight:bold;text-decoration:none;">${automate}</a></span></div>
         </div>
       </div>
       <hr class="bassin-separator">
@@ -238,18 +254,25 @@ fetch('data.json')
       const bassin = data[key];
       if (bassin && typeof bassin === 'object') {
         totalBassins++;
-        if (bassin.System_ON === true) bassinsOnline++;
-        // Pumps
-        if ('Pump1' in bassin) {
+        // System_ON (case-insensitive)
+        const systemOn = bassin.System_ON ?? bassin.system_on;
+        if (systemOn === true) bassinsOnline++;
+        // Pumps (case-insensitive)
+        const pump1 = bassin.Pump1 ?? bassin.pump1;
+        const pump2 = bassin.Pump2 ?? bassin.pump2;
+        if (pump1 !== undefined) {
           totalPumps++;
-          if (bassin.Pump1 === true) activePumps++;
+          if (pump1 === true) activePumps++;
         }
-        if ('Pump2' in bassin) {
+        if (pump2 !== undefined) {
           totalPumps++;
-          if (bassin.Pump2 === true) activePumps++;
+          if (pump2 === true) activePumps++;
         }
-        // Alarms
-        if (alarmKeys.some(alarm => bassin[alarm] === true)) {
+        // Alarms (case-insensitive)
+        if ((bassin.Alarm_Low_Level ?? bassin.alarm_low_level) === true ||
+          (bassin.Alarm_High_Level ?? bassin.alarm_high_level) === true ||
+          (bassin.Alarm_Thermal_P1 ?? bassin.alarm_thermal_p1) === true ||
+          (bassin.Alarm_Thermal_P2 ?? bassin.alarm_thermal_p2) === true) {
           activeAlarms++;
         }
       }

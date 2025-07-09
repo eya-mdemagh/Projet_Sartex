@@ -97,8 +97,8 @@ async function chargerBassin() {
       <circle cx="50" cy="50" r="47" fill="none" stroke="#dddddd" stroke-width="5" />
       <circle cx="50" cy="50" r="45" fill="none" stroke="#e0e0e0" stroke-width="10" />
       <circle cx="50" cy="50" r="45" fill="none" stroke="${gaugeColor}" stroke-width="10" stroke-dasharray="${dasharray}" stroke-dashoffset="${dashoffset}" style="transition:stroke-dashoffset 1s;"/>
-      <text x="50" y="54" text-anchor="middle" font-size="1em" font-weight="bold" fill="#17407b">${water.toFixed(2)} m³</text>
-      <text x="50" y="66" text-anchor="middle" font-size="0.8em" fill="#17407b">${percent.toFixed(0)}%</text>
+      <text x="50" y="54" text-anchor="middle" font-size="1.1em" font-weight="bold" fill="#17407b">${water.toFixed(2)} m³</text>
+      <text x="50" y="66" text-anchor="middle" font-size="1em" fill="#17407b">${percent.toFixed(0)}%</text>
     </svg>
     <div style='margin-top:8px;'>
       ${bassin && bassin.Systeme_Normal === true && percent > 85 ? `<span style=\"color:#ffa726;font-weight:bold;\"><i class=\"fas fa-circle\" style=\"font-size:0.7em;\"></i> Attention: &gt; 85%</span>` : ''}
@@ -202,43 +202,9 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 
 function renderBassinDetails(bassin) {
-  const status = bassin.status || {};
-  // Set title and icon
-  const config = {
-    'Bassin_Osmose': {
-      display: 'Bassin Eau Osmosé', icon: `<svg width="38" height="38" viewBox="0 0 38 38" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M19 5C19 5 8 18.5 8 25.5C8 31.0228 13.4772 33 19 33C24.5228 33 30 31.0228 30 25.5C30 18.5 19 5 19 5Z" fill="#fff" /><path d="M19 28.5C16.2386 28.5 14 26.2614 14 23.5" stroke="#204080" stroke-width="2" stroke-linecap="round" /></svg>`
-    },
-    'Bassin_Teinture': {
-      display: 'Bassin Teinture', icon: '<i class="fas fa-flask-vial" style="color:#a31963;font-size:38px;"></i>'
-    },
-    'Bassin_Chardiniaire': {
-      display: 'Bassin Chaudière', icon: '<i class="fas fa-industry" style="color:#ff9800;font-size:38px;"></i>'
-    },
-    'Bassin_Lavage': {
-      display: 'Bassin Lavage', icon: '<i class="fas fa-soap" style="color:#00bcd4;font-size:38px;"></i>'
-    }
-  };
-  const c = config[bassin.name] || { display: bassin.name, icon: '' };
-  document.getElementById('bassinTitle').textContent = c.display;
-  document.getElementById('bassinIcon').innerHTML = c.icon;
-
-  // Water Gauge (circular SVG with m³ and %)
-  const waterLevel = status.Water_Level !== undefined ? status.Water_Level : 0;
-  const waterPercent = Math.max(0, Math.min(100, waterLevel));
-  // Assume 1% = 0.01 m³ for demo (adjust as needed)
-  const waterM3 = (waterPercent * 0.01).toFixed(2);
-  document.getElementById('waterGauge').innerHTML = `
-    <svg width="100" height="100" viewBox="0 0 100 100">
-      <circle cx="50" cy="50" r="44" fill="none" stroke="#eee" stroke-width="8"/>
-      <circle cx="50" cy="50" r="44" fill="none" stroke="#1976d2" stroke-width="8"
-        stroke-dasharray="276.46" stroke-dashoffset="${276.46 * (1 - waterPercent / 100)}"
-        style="transition: stroke-dashoffset 0.6s;"/>
-      <text x="50" y="48" text-anchor="middle" font-size="1.3em" fill="#17407b" font-weight="bold">${waterM3} m³</text>
-      <text x="50" y="65" text-anchor="middle" font-size="1em" fill="#888">${waterPercent}%</text>
-    </svg>
-  `;
-
-  // Pumps State (as cards)
+  // Support both {status: {...}} and flat object
+  const status = bassin.status || bassin;
+  // Pompes
   let pumpsHtml = '<div class="pump-list">';
   [1, 2].forEach(num => {
     const isOn = status[`Pump${num}`] ? true : false;
@@ -276,11 +242,38 @@ function renderBassinDetails(bassin) {
   }
   document.getElementById('alarmStatus').innerHTML = alarmHtml;
 
+  // Jauge circulaire
+  const water = typeof status.Water_Level_Sim === 'number' ? status.Water_Level_Sim : 0;
+  const waterMax = typeof status.water_level_max === 'number' ? status.water_level_max : 100;
+  let percent = 0;
+  if (waterMax > 0) {
+    percent = Math.max(0, Math.min(100, (water / waterMax) * 100));
+  }
+  // Couleur dynamique selon le bassin
+  let gaugeColor = '#204080'; // Osmosé par défaut
+  if (status.name === 'Bassin_Teinture') gaugeColor = '#a31963';
+  else if (status.name === 'Bassin_Chardiniaire') gaugeColor = '#ff9800';
+  else if (status.name === 'Bassin_Lavage') gaugeColor = '#1976d2';
+  const dasharray = 2 * Math.PI * 45; // r=45 pour une jauge plus petite
+  const dashoffset = dasharray * (1 - percent / 100);
+  document.getElementById('waterGauge').innerHTML = `
+    <svg viewBox="0 0 100 100" width="70" height="70">
+      <circle cx="50" cy="50" r="47" fill="none" stroke="#dddddd" stroke-width="5" />
+      <circle cx="50" cy="50" r="45" fill="none" stroke="#e0e0e0" stroke-width="10" />
+      <circle cx="50" cy="50" r="45" fill="none" stroke="${gaugeColor}" stroke-width="10" stroke-dasharray="${dasharray}" stroke-dashoffset="${dashoffset}" style="transition:stroke-dashoffset 1s;"/>
+      <text x="50" y="54" text-anchor="middle" font-size="1.1em" font-weight="bold" fill="#17407b">${water.toFixed(2)} m³</text>
+      <text x="50" y="66" text-anchor="middle" font-size="1em" fill="#17407b">${percent.toFixed(0)}%</text>
+    </svg>
+    <div style='margin-top:8px;'>
+      ${status.Systeme_Normal === true && percent > 85 ? `<span style=\"color:#ffa726;font-weight:bold;\"><i class=\"fas fa-circle\" style=\"font-size:0.7em;\"></i> Attention: &gt; 85%</span>` : ''}
+      ${status.Systeme_Normal === true && percent < 15 ? `<span style=\"color:#ffa726;font-weight:bold;\"><i class=\"fas fa-circle\" style=\"font-size:0.7em;\"></i> Attention: &lt; 15%</span>` : ''}
+    </div>`;
+
   // Paramètres Système (Débit & Pression)
   const systemParamsDiv = document.getElementById('systemParams');
-  if (systemParamsDiv && bassin) {
-    const debit = typeof bassin.Debit === 'number' ? bassin.Debit : 0;
-    const pression = typeof bassin.Pression === 'number' ? bassin.Pression : 0;
+  if (systemParamsDiv && status) {
+    const debit = typeof status.Debit === 'number' ? status.Debit : 0;
+    const pression = typeof status.pression === 'number' ? status.pression : 0;
     systemParamsDiv.innerHTML = `
       <div class="param-card">
         <div class="param-icon"><svg width="32" height="32" viewBox="0 0 32 32"><g><rect fill="none" height="32" width="32"/></g><g><path d="M7 13c1.5 0 1.5 2 3 2s1.5-2 3-2 1.5 2 3 2 1.5-2 3-2 1.5 2 3 2" stroke="#17407b" stroke-width="2" fill="none"/></g></svg></div>
