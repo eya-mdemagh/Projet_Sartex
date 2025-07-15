@@ -60,6 +60,11 @@ def serve_login():
 def serve_static(filename):
     return send_from_directory(FRONTEND_FOLDER, filename)
 
+# Serve data.json
+@app.route('/data.json')
+def serve_data_json():
+    return send_from_directory('.', 'data.json')
+
 # User signup
 @app.route('/api/signup', methods=['POST'])
 def api_signup():
@@ -113,7 +118,7 @@ def api_bassins():
             data = json.load(f)
         # Assume data.json has a structure with bassin names as keys
         bassins = []
-        for bassin_name in ["Bassin_Osmose", "Bassin_Teinture", "Bassin_Chardiniaire", "Bassin_Lavage"]:
+        for bassin_name in ["Bassin_Osmose", "Bassin_Teinture", "Bassin_Chaudiere", "Bassin_Lavage"]:
             if bassin_name in data:
                 bassins.append({
                     'name': bassin_name,
@@ -152,7 +157,7 @@ def api_bassin_alarms(bassin_name):
 last_alarm_states = {}
 
 ALARM_TYPES = ["Alarm_Low_Level", "Alarm_High_Level", "Alarm_Thermal_P1", "Alarm_Thermal_P2"]
-BASSIN_NAMES = ["Bassin_Osmose", "Bassin_Teinture", "Bassin_Chardiniaire", "Bassin_Lavage"]
+BASSIN_NAMES = ["Bassin_Osmose", "Bassin_Teinture", "Bassin_Chaudiere", "Bassin_Lavage"]
 
 def alarm_logger():
     global last_alarm_states
@@ -182,12 +187,6 @@ def alarm_logger():
             print(f"Alarm logger error: {e}")
         time.sleep(5)
 
-# Start alarm logger in background
-if __name__ == '__main__':
-    init_db()
-    threading.Thread(target=alarm_logger, daemon=True).start()
-    app.run(debug=True)
-
 # ✅ Conversion correcte float32 pour automate Delta (little endian)
 def registers_to_float(regs):
     raw = struct.pack('<HH', regs[0], regs[1])  # Little-endian
@@ -215,10 +214,9 @@ def prepare_variable_sets(config):
 
 prepare_variable_sets(config)
 
-try:
+def modbus_loop():
     while True:
         all_data = {}
-
         for automate in config["automates"]:
             name = automate["name"]
             ip = automate["ip"]
@@ -247,7 +245,7 @@ try:
                                 if result.isError():
                                     raise ValueError("Erreur de lecture (float32)")
                                 value = registers_to_float(result.registers)
-                                automate_data[var_name] = round(value, 3)  # arrondi à 3 décimales
+                                automate_data[var_name] = round(value, 3)
                             else:
                                 result = client.read_holding_registers(addr, 1)
                                 if result.isError():
@@ -267,14 +265,14 @@ try:
 
             all_data[name] = automate_data
 
-        # Sauvegarder les données de tous les automates
         with open("data.json", "w") as f:
             json.dump(all_data, f, indent=2)
 
-        logging.info("✅ Données sauvegardées dans data.json")
+        logging.info(f"✅ Données sauvegardées dans data.json (intervalle: {interval}s)")
         time.sleep(interval)
 
-except KeyboardInterrupt:
-    logging.info("🛑 Arrêt manuel du programme (Ctrl+C)")
-except Exception as e:
-    logging.exception("❌ Erreur critique : %s", str(e))
+if __name__ == '__main__':
+    init_db()
+    threading.Thread(target=alarm_logger, daemon=True).start()
+    threading.Thread(target=modbus_loop, daemon=True).start()
+    app.run(debug=True)

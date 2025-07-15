@@ -14,7 +14,7 @@ async function chargerDonnees() {
   const bassins = [
     { key: 'Bassin_Osmose', id: 'status-osmose', nom: 'En ligne' },
     { key: 'Bassin_Teinture', id: 'status-teinture', nom: 'En ligne' },
-    { key: 'Bassin_Chardiniaire', id: 'status-chardiniaire', nom: 'En ligne' },
+    { key: 'Bassin_Chaudiere', id: 'status-chaudiere', nom: 'En ligne' },
     { key: 'Bassin_Lavage', id: 'status-lavage', nom: 'En ligne' }
   ];
   bassins.forEach(bassin => {
@@ -95,7 +95,7 @@ async function chargerDonnees() {
   const cardIds = [
     { key: 'Bassin_Osmose', valueId: 'waterValue' },
     { key: 'Bassin_Teinture', valueId: 'teintureValue' },
-    { key: 'Bassin_Chardiniaire', valueId: 'chardiniaireValue' },
+    { key: 'Bassin_Chaudiere', valueId: 'chaudiereValue' },
     { key: 'Bassin_Lavage', valueId: 'lavageValue' }
   ];
   cardIds.forEach(card => {
@@ -106,6 +106,39 @@ async function chargerDonnees() {
       if (el) el.textContent = percent + ' %';
     }
   });
+
+  // --- Vue d'Ensemble du Système dynamique ---
+  let totalBassins = 0;
+  let bassinsOnline = 0;
+  let totalPumps = 8; // Toujours 8 pompes (2 par bassin, 4 bassins)
+  let activePumps = 0;
+  let activeAlarms = 0;
+  let systemOn = false;
+  for (const key in data) {
+    const bassin = data[key];
+    if (bassin && typeof bassin === 'object') {
+      totalBassins++;
+      const isOn = bassin.System_ON ?? bassin.system_on;
+      if (isOn === true) systemOn = true;
+      const pump1 = bassin.Pump1 ?? bassin.pump1;
+      const pump2 = bassin.Pump2 ?? bassin.pump2;
+      if (pump1 === true) activePumps++;
+      if (pump2 === true) activePumps++;
+      if ((bassin.Alarm_Low_Level ?? bassin.alarm_low_level) === true ||
+          (bassin.Alarm_High_Level ?? bassin.alarm_high_level) === true ||
+          (bassin.Alarm_Thermal_P1 ?? bassin.alarm_thermal_p1) === true ||
+          (bassin.Alarm_Thermal_P2 ?? bassin.alarm_thermal_p2) === true) {
+        activeAlarms++;
+      }
+    }
+  }
+  const bassinsEl = document.getElementById('overview-bassins');
+  if (bassinsEl) bassinsEl.textContent = `${bassinsOnline}/${totalBassins}`;
+  const pumpsEl = document.getElementById('overview-pumps');
+  if (pumpsEl) pumpsEl.textContent = systemOn ? `${activePumps}/8` : `0/8`;
+  const alarmsEl = document.getElementById('overview-alarms');
+  if (alarmsEl) alarmsEl.textContent = activeAlarms;
+
   updateDashboardTime();
 }
 setInterval(chargerDonnees, 3000);
@@ -176,7 +209,7 @@ function renderBassinCard(bassin) {
     'Bassin_Teinture': {
       display: 'Bassin Teinture', color: '#a31963', icon: '<i class="fas fa-flask-vial" style="color:#fff;font-size:38px;"></i>'
     },
-    'Bassin_Chardiniaire': {
+    'Bassin_Chaudiere': {
       display: 'Bassin Chaudière', color: '#ff9800', icon: '<i class="fas fa-industry" style="color:#fff;font-size:38px;"></i>'
     },
     'Bassin_Lavage': {
@@ -195,14 +228,35 @@ function renderBassinCard(bassin) {
     dashoffset = 251.2 * (1 - (status.Water_Level_Sim / status.water_level_max));
   }
   const alarmCount = Object.keys(status).filter(k => k.startsWith('Alarm_') && status[k]).length;
-  const automate = status.Automate_ID || 'DVP28SV-01';
+  let automate;
+  if (status.type_Automate === 1) automate = 'DVP28SV';
+  else if (status.type_Automate === 0) automate = 'DVP12SV';
+  else automate = 'Non connecté';
+
+  // Détermination de l'état du bassin
+  let etat = 'hors_ligne';
+  let etatText = 'Hors ligne';
+  let etatColor = '#bbb';
+  if (alarmCount > 0) {
+    etat = 'alarme';
+    etatText = 'Alarme';
+    etatColor = '#e65100';
+  } else if (status.System_ON === true || status.System_ON === 1) {
+    etat = 'en_ligne';
+    etatText = 'En ligne';
+    etatColor = '#43a047';
+  }
+
   return `
     <div class="card">
-      <div class="card-title">
-        <span class="bassin-icon" style="background:${c.color};display:flex;align-items:center;justify-content:center;width:56px;height:56px;border-radius:16px;box-shadow:0 4px 16px ${c.color}22;">
-          ${c.icon}
-        </span>
-        ${c.display}
+      <div class="card-title" style="display:flex;align-items:center;justify-content:space-between;">
+        <div style="display:flex;align-items:center;gap:12px;">
+          <span class="bassin-icon" style="background:${c.color};display:flex;align-items:center;justify-content:center;width:56px;height:56px;border-radius:16px;box-shadow:0 4px 16px ${c.color}22;">
+            ${c.icon}
+          </span>
+          ${c.display}
+        </div>
+        <button class="bassin-etat-btn" style="background:${etatColor};color:#fff;">${etatText}</button>
       </div>
       <div class="card-content">
         <div class="bassin-infos-table" style="margin-bottom:12px;">
@@ -241,56 +295,57 @@ function renderBassinCard(bassin) {
 }
 
 // Update Vue d'Ensemble du Système with real data
-fetch('data.json')
-  .then(response => response.json())
-  .then(data => {
-    let totalBassins = 0;
-    let bassinsOnline = 0;
-    let totalPumps = 0;
-    let activePumps = 0;
-    let activeAlarms = 0;
-    const alarmKeys = ['Alarm_Low_Level', 'Alarm_High_Level', 'Alarm_Thermal_P1', 'Alarm_Thermal_P2'];
-    for (const key in data) {
-      const bassin = data[key];
-      if (bassin && typeof bassin === 'object') {
-        totalBassins++;
-        // System_ON (case-insensitive)
-        const systemOn = bassin.System_ON ?? bassin.system_on;
-        if (systemOn === true) bassinsOnline++;
-        // Pumps (case-insensitive)
-        const pump1 = bassin.Pump1 ?? bassin.pump1;
-        const pump2 = bassin.Pump2 ?? bassin.pump2;
-        if (pump1 !== undefined) {
-          totalPumps++;
-          if (pump1 === true) activePumps++;
-        }
-        if (pump2 !== undefined) {
-          totalPumps++;
-          if (pump2 === true) activePumps++;
-        }
-        // Alarms (case-insensitive)
-        if ((bassin.Alarm_Low_Level ?? bassin.alarm_low_level) === true ||
-          (bassin.Alarm_High_Level ?? bassin.alarm_high_level) === true ||
-          (bassin.Alarm_Thermal_P1 ?? bassin.alarm_thermal_p1) === true ||
-          (bassin.Alarm_Thermal_P2 ?? bassin.alarm_thermal_p2) === true) {
-          activeAlarms++;
-        }
-      }
-    }
-    // Update DOM
-    const bassinsEl = document.getElementById('overview-bassins');
-    if (bassinsEl) bassinsEl.textContent = `${bassinsOnline}/${totalBassins}`;
-    const pumpsEl = document.getElementById('overview-pumps');
-    if (pumpsEl) pumpsEl.textContent = `${activePumps}/${totalPumps}`;
-    const alarmsEl = document.getElementById('overview-alarms');
-    if (alarmsEl) alarmsEl.textContent = activeAlarms;
-  })
-  .catch(() => {
-    // fallback in case of error
-    const bassinsEl = document.getElementById('overview-bassins');
-    if (bassinsEl) bassinsEl.textContent = '--';
-    const pumpsEl = document.getElementById('overview-pumps');
-    if (pumpsEl) pumpsEl.textContent = '--';
-    const alarmsEl = document.getElementById('overview-alarms');
-    if (alarmsEl) alarmsEl.textContent = '--';
-  });
+// This block is now redundant as the logic is moved to chargerDonnees
+// fetch('data.json')
+//   .then(response => response.json())
+//   .then(data => {
+//     let totalBassins = 0;
+//     let bassinsOnline = 0;
+//     let totalPumps = 0;
+//     let activePumps = 0;
+//     let activeAlarms = 0;
+//     const alarmKeys = ['Alarm_Low_Level', 'Alarm_High_Level', 'Alarm_Thermal_P1', 'Alarm_Thermal_P2'];
+//     for (const key in data) {
+//       const bassin = data[key];
+//       if (bassin && typeof bassin === 'object') {
+//         totalBassins++;
+//         // System_ON (case-insensitive)
+//         const systemOn = bassin.System_ON ?? bassin.system_on;
+//         if (systemOn === true) bassinsOnline++;
+//         // Pumps (case-insensitive)
+//         const pump1 = bassin.Pump1 ?? bassin.pump1;
+//         const pump2 = bassin.Pump2 ?? bassin.pump2;
+//         if (pump1 !== undefined) {
+//           totalPumps++;
+//           if (pump1 === true) activePumps++;
+//         }
+//         if (pump2 !== undefined) {
+//           totalPumps++;
+//           if (pump2 === true) activePumps++;
+//         }
+//         // Alarms (case-insensitive)
+//         if ((bassin.Alarm_Low_Level ?? bassin.alarm_low_level) === true ||
+//           (bassin.Alarm_High_Level ?? bassin.alarm_high_level) === true ||
+//           (bassin.Alarm_Thermal_P1 ?? bassin.alarm_thermal_p1) === true ||
+//           (bassin.Alarm_Thermal_P2 ?? bassin.alarm_thermal_p2) === true) {
+//           activeAlarms++;
+//         }
+//       }
+//     }
+//     // Update DOM
+//     const bassinsEl = document.getElementById('overview-bassins');
+//     if (bassinsEl) bassinsEl.textContent = `${bassinsOnline}/${totalBassins}`;
+//     const pumpsEl = document.getElementById('overview-pumps');
+//     if (pumpsEl) pumpsEl.textContent = `${activePumps}/${totalPumps}`;
+//     const alarmsEl = document.getElementById('overview-alarms');
+//     if (alarmsEl) alarmsEl.textContent = activeAlarms;
+//   })
+//   .catch(() => {
+//     // fallback in case of error
+//     const bassinsEl = document.getElementById('overview-bassins');
+//     if (bassinsEl) bassinsEl.textContent = '--';
+//     const pumpsEl = document.getElementById('overview-pumps');
+//     if (pumpsEl) pumpsEl.textContent = '--';
+//     const alarmsEl = document.getElementById('overview-alarms');
+//     if (alarmsEl) alarmsEl.textContent = '--';
+//   });

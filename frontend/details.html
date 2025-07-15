@@ -6,12 +6,13 @@
   <title>Détail Bassin</title>
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 
 <body style="background:#17407b;">
   <header class="main-header">
     <div class="header-left">
-      <img src="sartex_logo.png" alt="Logo Sartex" class="logo">
+      <img src="assets/sartex_logo.png" alt="Logo Sartex" class="logo">
       <span class="brand">Sartex<br>Group</span>
     </div>
     <nav class="header-nav">
@@ -36,12 +37,11 @@
     <button onclick="window.history.back()"
       style="background:#fff;border:none;border-radius:12px;padding:6px 12px;font-size:0.95em;cursor:pointer;box-shadow:0 2px 8px #17407b22;display:flex;align-items:center;gap:8px;"><i
         class="fas fa-arrow-left"></i> Retour</button>
-    <div class="header-left" style="display:flex;align-items:center;gap:8px;margin-right:800px;">
-      <span id="bassinIcon" style="font-size:2em;vertical-align:middle;"></span>
-      <span id="bassinTitle"
-        style="font-size:2.2em;font-weight:bold;color:#fff;vertical-align:middle;text-align:left;">Bassin</span>
+    <div class="header-left bassin-header" style="display:flex;align-items:center;gap:14px;margin-right:0;flex:1;">
+      <span id="bassinIcon" class="bassin-header-icon" style="font-size:2.4em;vertical-align:middle;display:flex;align-items:center;justify-content:center;"></span>
+      <span id="bassinFullTitle" style="font-size:2.2em;font-weight:bold;color:#fff;white-space:nowrap;display:inline-block;"></span>
     </div>
-    <span id="bassinStatus" style="margin-left:24px;"></span>
+    <span id="bassinStatus" style="margin-left:32px;"></span>
   </div>
   <div style="display:flex;gap:32px;justify-content:center;align-items:flex-start;padding:0 32px;">
     <div
@@ -63,6 +63,7 @@
       <h2 style="color:#17407b;font-size:1.3em;margin-bottom:18px;">Alarmes & Alertes</h2>
       <div style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
         <div id="alarmStatus" style="margin-bottom:12px;"></div>
+        <div id="lastAlarms" style="color:#333;font-size:1em;margin-bottom:6px;"></div>
         <div id="lastCheck" style="color:#333;font-size:1em;margin-bottom:12px;"></div>
         <button id="historiqueAlarmeBtn"
           style="background:#17407b;color:#fff;padding:10px 24px;border:none;border-radius:12px;font-size:1em;font-weight:bold;cursor:pointer;box-shadow:0 2px 8px #17407b22;">Historique
@@ -71,10 +72,20 @@
     </div>
     <!-- End of Monitoring Principal and Alarmes & Alertes row -->
   </div>
-  <!-- Paramètres Système section in a new row -->
-  <div id="system-params-section">
-    <div style="font-size:1.3em;font-weight:bold;color:#17407b;margin-bottom:18px;">Paramètres Système</div>
-    <div id="systemParams"></div>
+  <!-- Paramètres Système et Tendance Niveau d'Eau (24h) côte à côte -->
+  <div class="details-row">
+    <div id="system-params-section">
+      <div style="font-size:1.3em;font-weight:bold;color:#17407b;margin-bottom:18px;">Paramètres Système</div>
+      <div id="systemParams"></div>
+    </div>
+    <div id="water-trend-section">
+      <h2 style="color:#17407b;font-size:1.3em;margin-bottom:18px;">Tendance Niveau d'Eau (24h)</h2>
+      <div id="waterTrendChart"></div>
+    </div>
+  </div>
+  <!-- Bloc Équipement centré sous les deux autres blocs -->
+  <div id="equipement-section" style="display:flex;justify-content:center;align-items:flex-start;margin:36px 0 0 0;width:100%;">
+    <!-- Le contenu dynamique sera injecté par JS -->
   </div>
   <!-- Modal for Alarm History -->
   <div id="alarmHistoryModal"

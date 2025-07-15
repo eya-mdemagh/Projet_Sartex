@@ -1,5 +1,5 @@
 {
-  "interval": 5,
+  "interval":2,
   "automates": [
     {
       "name": "Bassin_Osmose",
@@ -25,7 +25,9 @@
         "valeur_Debimetre_num": {"address": 4100, "type": "holding_register", "data_type": "float32", "unit": "mA"},
         "pression": {"address": 4102, "type": "holding_register", "data_type": "float32", "unit": "bar"},
         "Debit": {"address": 4104, "type": "holding_register", "data_type": "float32", "unit": "m^3/h"},
-        "water_level_max": {"address": 4132, "type": "holding_register", "data_type": "float32", "unit": "m^3"}
+        "water_level_max": {"address": 4132, "type": "holding_register", "data_type": "float32", "unit": "m^3"},
+        "water_level_min": {"address": 4134, "type": "holding_register", "data_type": "float32", "unit": "m^3"},
+        "type_Automate": {"address": 4136, "type": "holding_register", "data_type": "uint16", "unit": "m^3"}
       }
     },
     {
@@ -52,11 +54,13 @@
         "valeur_Debimetre_num": {"address": 4100, "type": "holding_register", "data_type": "float32", "unit": "mA"},
         "pression": {"address": 4102, "type": "holding_register", "data_type": "float32", "unit": "bar"},
         "Debit": {"address": 4104, "type": "holding_register", "data_type": "float32", "unit": "m^3/h"},
-        "water_level_max": {"address": 4132, "type": "holding_register", "data_type": "float32", "unit": "m^3"}
+        "water_level_max": {"address": 4132, "type": "holding_register", "data_type": "float32", "unit": "m^3"},
+        "water_level_min": {"address": 4134, "type": "holding_register", "data_type": "float32", "unit": "m^3"},
+        "type_Automate": {"address": 4136, "type": "holding_register", "data_type": "uint16", "unit": "m^3"}
       }
     },
     {
-      "name": "Bassin_Chardiniaire",
+      "name": "Bassin_Chaudiere",
       "ip": "172.16.23.255",
       "port": 502,
       "variables": {
@@ -79,7 +83,9 @@
         "valeur_Debimetre_num": {"address": 4100, "type": "holding_register", "data_type": "float32", "unit": "mA"},
         "pression": {"address": 4102, "type": "holding_register", "data_type": "float32", "unit": "bar"},
         "Debit": {"address": 4104, "type": "holding_register", "data_type": "float32", "unit": "m^3/h"},
-        "water_level_max": {"address": 4132, "type": "holding_register", "data_type": "float32", "unit": "m^3"}
+        "water_level_max": {"address": 4132, "type": "holding_register", "data_type": "float32", "unit": "m^3"},
+        "water_level_min": {"address": 4134, "type": "holding_register", "data_type": "float32", "unit": "m^3"},
+        "type_Automate": {"address": 4136, "type": "holding_register", "data_type": "uint16", "unit": "m^3"}
       }
     },
     {
@@ -106,7 +112,9 @@
         "valeur_Debimetre_num": {"address": 4100, "type": "holding_register", "data_type": "float32", "unit": "mA"},
         "pression": {"address": 4102, "type": "holding_register", "data_type": "float32", "unit": "bar"},
         "Debit": {"address": 4104, "type": "holding_register", "data_type": "float32", "unit": "m^3/h"},
-        "water_level_max": {"address": 4132, "type": "holding_register", "data_type": "float32", "unit": "m^3"}
+        "water_level_max": {"address": 4132, "type": "holding_register", "data_type": "float32", "unit": "m^3"},
+        "water_level_min": {"address": 4134, "type": "holding_register", "data_type": "float32", "unit": "m^3"},
+        "type_Automate": {"address": 4136, "type": "holding_register", "data_type": "uint16", "unit": "m^3"}
       }
     }
   ]

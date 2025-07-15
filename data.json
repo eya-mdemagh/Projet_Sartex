@@ -19,7 +19,9 @@
     "valeur_Debimetre_num": null,
     "pression": null,
     "Debit": null,
-    "water_level_max": null
+    "water_level_max": null,
+    "water_level_min": null,
+    "type_Automate": null
   },
   "Bassin_Teinture": {
     "Start_Button": null,
@@ -41,9 +43,11 @@
     "valeur_Debimetre_num": null,
     "pression": null,
     "Debit": null,
-    "water_level_max": null
+    "water_level_max": null,
+    "water_level_min": null,
+    "type_Automate": null
   },
-  "Bassin_Chardiniaire": {
+  "Bassin_Chaudiere": {
     "Start_Button": null,
     "Stop_Button": null,
     "Thermal_Fault_P1": null,
@@ -63,7 +67,9 @@
     "valeur_Debimetre_num": null,
     "pression": null,
     "Debit": null,
-    "water_level_max": null
+    "water_level_max": null,
+    "water_level_min": null,
+    "type_Automate": null
   },
   "Bassin_Lavage": {
     "Start_Button": null,
@@ -85,6 +91,8 @@
     "valeur_Debimetre_num": null,
     "pression": null,
     "Debit": null,
-    "water_level_max": null
+    "water_level_max": null,
+    "water_level_min": null,
+    "type_Automate": null
   }
 }
